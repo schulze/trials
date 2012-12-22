@@ -4,13 +4,26 @@ import (
 	"testing"
 )
 
+// some primes not in SmallPrimes
+var bigP = []int64{82307, 82339, 82349, 82351, 82361, 82373,  82387}
+
+func TestBig(t *testing.T) {
+	lastP := bigP[len(bigP)-1]
+	for _, p := range bigP {
+		n := p*lastP
+		if fact := TrialDivide(n, p+10); fact != p {
+			t.Fatalf("got factor %d from %d = %d * %d\n", fact, n, p, lastP)
+		}
+	}
+}
+
 func TestSmall(t *testing.T) {
 	// test with some small primes
 	if TrialDivide(17*23*23, 17*23*23+1) != 17 {
 		t.Fatal("17*23*23")
 	}
 	if TrialDivide(17,19) != 17 {
-		t.Fatal("17, 19")	
+		t.Fatal("17, 19")
 	}
 	if TrialDivide(17,18) != 17 {
 		t.Fatal("17, 18")	
