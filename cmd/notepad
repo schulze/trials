@@ -1,0 +1,6 @@
+#! /bin/sh
+
+filename=~/notes.`date +'%Y%m%d'`
+
+touch $filename
+B $filename:$
