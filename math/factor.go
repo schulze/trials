@@ -55,3 +55,4 @@ func IsPrime(n int64) bool {
 	return false
 }
 
+func PollardRho(n int) {}
