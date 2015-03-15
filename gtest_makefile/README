@@ -1,0 +1,5 @@
+Simple Makefile for simple C++ projects using Goggle's
+C++ Testing Framework.
+
+See e.g. the Makefile in code.google.com/p/re2 for an example of
+a good more complex Makefile.
