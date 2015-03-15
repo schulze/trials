@@ -1,5 +1,5 @@
 trials
-======
+=======
 
-Experiments, scripts, random source code.
+Stupid little programs, experiments, scripts, and other random old source code.
 
