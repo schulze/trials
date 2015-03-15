@@ -1,0 +1,150 @@
+%%  -*- mode: Noweb; noweb-code-mode: scheme-mode -*-
+
+%% This is a literate program. You can generate LaTeX and Scheme code
+%% using the noweb tools noweave and notangle.
+
+\documentclass[a4paper]{amsart}
+\usepackage{noweb}
+\usepackage{hyperref}
+\usepackage{amsmath,amsthm}
+\author{Frithjof Schulze}
+\title{A compiler for turing machines inspired by
+Shiriam Krishnamurti's paper "Automata via macros"}
+\date{Thu 06 Apr 2006}
+\begin{document}
+\maketitle
+\section{Introduction}
+We want to define a macro [[turing-machine]], so that for example
+
+<<example 1>>=
+(turing-machine 
+ init
+ (init : 
+       (a -> 'a 'r init) 
+       (b -> 'a 'r init)
+       (c -> 'a 'r second))
+ (second :
+         END))
+@
+expands into something like
+
+<<example 2>>=
+(define machine
+  (letrec ((init (lambda (tape)
+                   (case (position tape)
+                     (('a) (init (operate 'a 'r tape)))
+                     (('b) (init (operate 'a 'r tape)))
+                     (('c) (second (operate 'a 'r tape)))
+                     (else #f))))
+           
+           (second (lambda (tape)
+                     tape)))
+    init))
+@
+
+If we have such a macro and a definition of [[operate]], [[position]]
+and [[make-tape]], then
+
+<<example 3>>=
+(define a-machine 
+   (turing-machine 
+    init
+    (init : 
+     (a -> 'a 'r init)
+     (b -> 'a 'r init)
+     (c -> 'a 'r second))
+     (second :
+	END)))
+@
+
+defines a turing-machine that could be invoked by calling
+
+\begin{quote}
+[[(a-machine (make-tape '(a b b b a b c)))]].
+\end{quote}
+
+We will use syntax-rules macros. If these aren't available by default
+in your scheme implementation, you will have to do something like
+
+<<chicken>>=
+(require-extension syntax-case)
+@ 
+in Chicken Scheme or 
+
+<<gambit>>=
+(load "~~/syntax-case")
+@
+in Gambit Scheme
+
+\section{Implementation}
+
+We represented the tape as the [[cons]] of the {\bf left} and the {\bf
+  right} part. We decide that our current position will always be the
+[[car]] of the {\bf right} side of the tape.
+
+<<make-tape>>=
+(define (make-tape lst)
+  (if (list? lst)
+      (cons '() lst)
+      (error "(make-tape) Argument is not a list" lst)))
+
+@
+<<utilities>>=
+(define (right tape)
+  (if (null? (cdr tape))
+      #f
+      (cdr tape)))
+
+(define (left tape)
+  (if (null? (car tape))
+      #f
+      (car tape)))
+@
+
+<<utilities>>=
+(define (position tape)
+  (if (right tape)
+      (car (right tape))
+      #f))
+@
+<<macro>>=
+(define-syntax turing-machine
+  (syntax-rules (:)
+    ((_ init-state 
+	(state : action ...)
+	...)
+     
+     (letrec-syntax
+	 ((operate
+	   (syntax-rules ()
+	     ((_ new-char direction tape)
+	      (cond 
+	       ((eq? direction 'r) (cons (cons new-char (left tape))
+					 (cdr (right tape))))
+	       ((eq? direction 'l) (cons (cdr (left tape))
+					 (cons new-char (cdr (right tape)))))))))
+	  
+	  (process-action
+	   (syntax-rules (-> END)
+	     ((_ END)
+	      (lambda (tape)
+		tape))
+	     ((_ (char-at-pos -> new-char direction new-state) (... ...))
+	      (lambda (tape)
+		(case (position tape)
+		  ((char-at-pos) (new-state (operate new-char direction tape)))
+		  (... ...)
+		  (else #f)))))))
+       
+       (letrec ((state 
+		 (process-action action ...))
+		...)
+	 init-state)))))
+
+@
+<<*>>=
+<<utilities>>
+<<make-tape>>
+<<macro>>
+@
+\end{document}
